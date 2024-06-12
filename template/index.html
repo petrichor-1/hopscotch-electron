@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+	<head>
+    <!-- <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'sha256-vrQ38bkUuVjnRMqPHTORk8HSDqJAzg+OypIyR8Ofnjs='; style-src 'unsafe-inline'"
+    /> -->
+		__PETRICHOR__TITLE__TAG__
+		<meta charset="utf-8">
+    <style>
+      #player {
+        display: block; position: fixed; top: 0px; left: 0px;
+      }
+      body {
+        background-color: black;
+      }
+    </style>
+	</head>
+	<body>
+		__PETRICHOR__SVG_STRING__TAG__
+			<hopscotch-player data-project-json='' stage-size='container' id='player'></hopscotch-player>
+			<script>
+        /*
+        * Where to get custom images from?
+        */
+        window.BASE_IMAGE_URL = "custom_images/"
+        /*
+        * Use username from OS as user nickname
+        */
+        window.ACCOUNT = {
+          user: {
+            nickname: "Electron"
+          }
+        }
+        async function setUsername() {
+          window.ACCOUNT.user.nickname = await window.ipc.osUsername()
+        }
+        setUsername()
+				/*
+				* Load json
+				*/ 
+				fetch("project.hopscotch").then(e=>e.text().then(text=>{
+					document.querySelector('hopscotch-player').dataset.projectJson = text
+					const startProjectIfPossible = () => {
+						if (!window.main)
+							return setTimeout(startProjectIfPossible, 100)
+            main.resizeRoot(window.outerWidth, window.outerHeight)
+						main.play()
+					}
+					setTimeout(startProjectIfPossible, 100)
+          window.addEventListener("resize", () => {
+            main.resizeRoot(window.outerWidth, window.outerHeight)
+          })
+          // TODO: Only events
+          window.setInterval( () => {
+            main.resizeRoot(window.outerWidth, window.outerHeight)
+          }, 100)
+				}))
+			</script>
+      <script src="pixi.js"></script>
+			<script src="player.js"></script>
+	</body>
+</html>
