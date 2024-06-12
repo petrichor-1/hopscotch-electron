@@ -2,7 +2,7 @@
 
 // Generate a new electron-based player app for a given uuid
 
-const { readFileSync, existsSync, cpSync, writeSync, writeFileSync } = require("fs")
+const { readFileSync, existsSync, cpSync, writeSync, writeFileSync, mkdirSync } = require("fs")
 const {JSDOM} = require("jsdom")
 const path = require("path")
 
@@ -55,7 +55,8 @@ async function main() {
 	const playerScriptURL = `https://s3.amazonaws.com/hopscotch-webplayer/production/${version.path}`
 	const pixiScriptURL = `https://s3.amazonaws.com/hopscotch-webplayer/production/pixi/${version.pixi}/pixi.min.js`
 	console.log("Downloading webplayer")
-	const playerScript = await (await fetch(playerScriptURL)).text()
+	// Replace sound url
+	const playerScript = (await (await fetch(playerScriptURL)).text()).replaceAll("https://d2jeqdlsh5ay24.cloudfront.net", "sounds/")
 	console.log("Downloading pixi")
 	const pixiScript = await (await fetch(pixiScriptURL)).text()
 	console.log("Downloading character SVGs")
@@ -103,6 +104,22 @@ async function main() {
 		const image = new Uint8Array(await (await fetch(url)).arrayBuffer())
 		writeFileSync(path.join(destinationPath, "custom_images", filename), image)
 	}
+	console.log("Downloading sounds")
+	const sounds = getAllUsedSoundPaths(project)
+	for (let i = 0; i < sounds.length; i ++) {
+		const soundName = sounds[i]
+		let soundPath = soundName.split(".");
+		let name = soundPath[0];
+		let extension = soundPath[1] || "mp3";
+		const filename = `${name}.${extension}`
+		const finalPath = path.join(destinationPath, "sounds", filename)
+		if (!existsSync(path.dirname(finalPath)))
+			mkdirSync(path.dirname(finalPath), {recursive: true})
+
+		const url = `https://d2jeqdlsh5ay24.cloudfront.net/${filename}`
+		const sound = new Uint8Array(await (await fetch(url)).arrayBuffer())
+		writeFileSync(finalPath, sound)
+	}
 	console.log("Done!")
 }
 main()
@@ -141,4 +158,73 @@ async function getProjectJsonFromUserInputUUID(uuid) {
 		return `https://community.gethopscotch.com/api/v1/projects/${uuid}`
 	})()
 	return await (await fetch(jsonURL)).json()
+}
+
+function getAllUsedSoundPaths(project) {
+	const HSParameterType = {
+		Sound: 51,
+		MusicNote: 60,
+		Instrument: 61
+	}
+	const DEFAULT_INSTRUMENT = "piano"
+	const VALID_INSTRUMENTS = ["ocarina", "piano", "vibraphone", "guitar", "cello", "8bit", "choir"];
+
+	let soundNames = []
+	const alreadyDownloadedInstruments = []
+	const forEachParameter = param => {
+		// Will be called with every parameter in the project
+		switch (param.type) {
+			case HSParameterType.Sound:
+				if (soundNames.indexOf(param.value) === -1) {
+					soundNames.push(param.value);
+				}
+				break;
+			case HSParameterType.MusicNote:
+				soundNames = soundNames.concat(allMusicNotesFor(DEFAULT_INSTRUMENT));
+				break;
+			case HSParameterType.Instrument:
+				soundNames = soundNames.concat(allMusicNotesFor(param.value));
+			default:
+				break;
+		}
+	}
+
+	function allMusicNotesFor(instrument) {
+		instrument = parseInstrumentName(instrument);
+        if (alreadyDownloadedInstruments.includes(instrument) || !VALID_INSTRUMENTS.includes(instrument)) {
+            return [];
+        }
+        alreadyDownloadedInstruments.push(instrument);
+        return [...Array(37).keys()].map(n => {
+            return instrument + "/" + (n + 48) + ".wav";
+        });
+	}
+
+	function parseInstrumentName(instrument) {
+		if (instrument === "strings") {
+			instrument = "cello";
+		}
+	
+		return instrument.toLocaleLowerCase().replace(" ", "");
+	}
+	const enumerateParameters = parameter => {
+		forEachParameter(parameter)
+		if (parameter.datum?.params?.length > 0) {
+			parameter.datum.params.forEach(enumerateParameters)
+		}
+	}
+	project.abilities.forEach(ability => {
+		ability.blocks.forEach(block => {
+			if (!block.parameters)
+				return
+			block.parameters.forEach(enumerateParameters)
+		})
+	})
+	project.rules.forEach(rule => {
+		rule.parameters.forEach(enumerateParameters)
+	})
+	project.customRuleInstances.forEach(rule => {
+		rule.parameters.forEach(enumerateParameters)
+	})
+	return soundNames
 }
