@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html>
 	<head>
-    <!-- <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'sha256-vrQ38bkUuVjnRMqPHTORk8HSDqJAzg+OypIyR8Ofnjs='; style-src 'unsafe-inline'"
-    /> -->
+      <!--unsafe-eval is needed for pixi-->
+        <!-- I don't think hopscotch even uses that functionality -->
+        <!-- :/ -->
+      <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'sha256-KL2f0zHdQ71PFHC+JFaJHyoH+Rldc8S/p/hOM9qoY/0=' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data: 'self'"
+      />
 		__PETRICHOR__TITLE__TAG__
 		<meta charset="utf-8">
     <style>
