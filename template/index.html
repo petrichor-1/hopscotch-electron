@@ -18,7 +18,9 @@
 	</head>
 	<body>
 		__PETRICHOR__SVG_STRING__TAG__
-			<hopscotch-player data-project-json='' stage-size='container' id='player'></hopscotch-player>
+			__PETRICHOR__PLAYER__TAG__
+      <script src="pixi.js"></script>
+			<script src="player.js"></script>
 			<script>
         /*
         * Where to get custom images from?
@@ -36,18 +38,9 @@
           window.ACCOUNT.user.nickname = await window.ipc.osUsername()
         }
         setUsername()
-				/*
-				* Load json
-				*/ 
-				fetch("project.hopscotch").then(e=>e.text().then(text=>{
-					document.querySelector('hopscotch-player').dataset.projectJson = text
-					const startProjectIfPossible = () => {
-						if (!window.main)
-							return setTimeout(startProjectIfPossible, 100)
-            main.resizeRoot(window.outerWidth, window.outerHeight)
-						main.play()
-					}
-					setTimeout(startProjectIfPossible, 100)
+        window.addEventListener("load", () => {
+          main.resizeRoot(window.outerWidth, window.outerHeight)
+          main.play()
           window.addEventListener("resize", () => {
             main.resizeRoot(window.outerWidth, window.outerHeight)
           })
@@ -55,9 +48,7 @@
           window.setInterval( () => {
             main.resizeRoot(window.outerWidth, window.outerHeight)
           }, 100)
-				}))
+        })
 			</script>
-      <script src="pixi.js"></script>
-			<script src="player.js"></script>
 	</body>
 </html>

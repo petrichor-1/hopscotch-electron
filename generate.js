@@ -82,14 +82,18 @@ async function main() {
 	writeFileSync(path.join(destinationPath, "player.js"), playerScript)
 	console.log("Adding pixi file")
 	writeFileSync(path.join(destinationPath, "pixi.js"), pixiScript)
-	console.log("Including svg string")
+	console.log("Modifying index.html")
 	// TODO: Figure out why using JSDOM didn't work for this
 	function htmlEscape(str) {
 		return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 	}
 	const titleTag = `<title>${htmlEscape(title)} by ${htmlEscape(author)}</title>`
+	const playerTagDoc = new JSDOM("<html><body><hopscotch-player data-project-json='' stage-size='container' id='player'></hopscotch-player></html></body>")
+	const playerElement = playerTagDoc.window.document.querySelector("hopscotch-player")
+	playerElement.dataset.projectJson = JSON.stringify(project)
+	const playerTag = playerElement.outerHTML
 	let html = readFileSync(path.join(destinationPath, "index.html")).toString()
-	html = html.replace("__PETRICHOR__TITLE__TAG__", titleTag).replace("__PETRICHOR__SVG_STRING__TAG__", svgString)
+	html = html.replace("__PETRICHOR__TITLE__TAG__", titleTag).replace("__PETRICHOR__SVG_STRING__TAG__", svgString).replace("__PETRICHOR__PLAYER__TAG__", playerTag)
 	writeFileSync(path.join(destinationPath, "index.html"), html)
 	
 	console.log("Copying custom images")
