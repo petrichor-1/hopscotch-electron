@@ -31,7 +31,7 @@ if (process.argv.length >= 5) {
 
 async function main() {
 	console.log("Downloading project")
-	const project = await getProjectJsonFromUserInputUUID(process.argv[2])
+	const {project, uuid} = await getProjectJsonFromUserInputUUID(process.argv[2])
 	const title = project.title || "Untitled"
 	const author = project.user?.nickname || project.author || "Unknown Author"
 	const playerVersion = project.playerVersion || "1.0.0"
@@ -92,7 +92,12 @@ async function main() {
 	let html = readFileSync(path.join(destinationPath, "index.html")).toString()
 	html = html.replaceAll("__PETRICHOR__TITLE__TAG__", titleTag).replaceAll("__PETRICHOR__SVG_STRING__TAG__", svgString).replaceAll("__PETRICHOR__PLAYER__TAG__", playerTag)
 	writeFileSync(path.join(destinationPath, "index.html"), html)
-	
+	console.log("Renaming package")
+	const packageJson = JSON.parse(readFileSync(path.join(destinationPath, "package.json")).toString())
+	packageJson.name = `hopscotch-${uuid}`
+	packageJson.author = author
+	packageJson.description = `${title} by ${author}`
+	writeFileSync(path.join(destinationPath, "package.json"), JSON.stringify(packageJson))
 	console.log("Copying custom images")
 	const filenames = project.remote_asset_urls
 	for (let i = 0; i < filenames.length; i ++) {
@@ -131,13 +136,14 @@ main()
 async function getProjectJsonFromUserInputUUID(uuid) {
 	// Never pass anything other than an already extracted uuid here
 	// In case that gets ignored, handle the most likely other formats too.
+	let actualUUID
 	const jsonURL = (() => {
 		if (/^https?:\/\//.test(uuid)) {
 			if (/^https?:\/\/(c(ommunity)|explore)?\.([^\.]+)\.com\/p(rojects)?\/([^\/])/.test(uuid)) {
 				// Simple project link or explore link
 				const match = /^https?:\/\/(c(ommunity)|explore)?\.([^\.]+)\.com\/p(rojects)?\/([^\/])/.match(uuid)
 				const domain = match[2]
-				const actualUUID = match[4]
+				actualUUID = match[4]
 				if (!allowedDomains.includes(domain)) {
 					console.error("!!!!!!!!! Bad domain!")
 					console.error(domain)
@@ -148,17 +154,19 @@ async function getProjectJsonFromUserInputUUID(uuid) {
 				// Unknown url format, just assume the final part of the path is the uuid, maybe with a `.hopscotch` suffix
 				//    Conveniently, `.` is disallowed in project uuids
 				const splitURL = uuid.split("/")
-				const assumedUUID = splitURL[splitURL.length - 1].split(".")[0]
-				return `https://community.gethopscotch.com/api/v1/projects/${assumedUUID}`
+				actualUUID = splitURL[splitURL.length - 1].split(".")[0]
+				return `https://community.gethopscotch.com/api/v1/projects/${actualUUID}`
 			}
 		} else if (/file:\/\//.test(uuid)) {
 			// File url
+			actualUUID = "UNKNOWN" + Math.round(Math.random() * 10000)
 			return uuid
 		}
 		// Assume the user was good and passed the uuid in an expected format
+		actualUUID = uuid
 		return `https://community.gethopscotch.com/api/v1/projects/${uuid}`
 	})()
-	return await (await fetch(jsonURL)).json()
+	return {project: await (await fetch(jsonURL)).json(), uuid: actualUUID}
 }
 
 function getAllUsedSoundPaths(project) {
