@@ -12,4 +12,12 @@
    ```
    ./generate.js <project-uuid> <result-directory>
    ```
-4. remaining steps to come later, see if you can figure it out in the meantime
+4. `cd` into the path you privded for `result-directory`
+5. `npm install`
+6. You can start the project with `npm run start` or follow the directions at https://www.electronjs.org/docs/latest/tutorial/tutorial-packaging to package the project
+
+
+# TODO
+Future improvements to this project are:
+* Do not download custom images that aren't actually used
+* Show loading screen
