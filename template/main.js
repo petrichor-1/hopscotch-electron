@@ -23,6 +23,7 @@ app.whenReady().then(() => {
 	ipcMain.handle('osUsername', () => username)
 	const win = createWindow(size)
 	win.setAspectRatio(size.width / size.height)
+	win.setSize(size.width, size.height)
 })
 
 function getProjectSize() {
